@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy"
+          content="default-src 'self'; img-src 'self' vitro-asset: https://cdn2.steamgriddb.com https://cdn.steamgriddb.com; style-src 'self'" />
+    <title>VitroManager</title>
+    <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+    <!-- ================= Welcome screen ================= -->
+    <section id="view-welcome" class="view">
+        <div class="welcome-card">
+            <div class="welcome-logo">V</div>
+            <h1>VitroManager</h1>
+            <p>
+                Manage your Vitro Launcher game library. Open a
+                <strong>GAME</strong> folder to get started — inside the
+                Vitro Launcher folder, or at the root of an SD card.
+                You can open several folders and manage them as one library.
+            </p>
+            <p class="welcome-hint">
+                Usually at <code>MUOS/application/Vitro&nbsp;Launcher/GAME</code>
+                or <code>&lt;SD card&gt;/GAME</code>
+            </p>
+            <button id="btn-open-folder" class="btn btn-primary btn-lg">Open GAME Folder…</button>
+            <p id="welcome-error" class="error-text hidden"></p>
+        </div>
+    </section>
+
+    <!-- ================= Library screen ================= -->
+    <section id="view-library" class="view hidden">
+        <header class="toolbar">
+            <div class="toolbar-title">
+                <h2>Game Library</h2>
+                <div id="root-list" class="root-list"></div>
+                <button id="btn-add-root" class="btn btn-ghost btn-sm" title="Open another GAME folder (e.g. on a second SD card) alongside this one">+ Folder</button>
+            </div>
+            <div class="toolbar-actions">
+                <select id="sort-select" class="toolbar-select" title="Sort the library">
+                    <option value="az">Sort: A–Z</option>
+                    <option value="playtime">Sort: Playtime</option>
+                </select>
+                <button id="btn-stats" class="btn btn-ghost" title="Playtime and play counts, read from each folder's stats.json">Stats</button>
+                <button id="btn-backup" class="btn btn-ghost" title="Copy new and changed files from every open GAME folder to your backup folder. Shift-click to choose a different backup folder.">Back Up</button>
+                <button id="btn-optimize" class="btn btn-ghost" title="Downscale oversized covers, icons and backgrounds in place">Optimize Images</button>
+                <button id="btn-rescan" class="btn btn-ghost">Rescan</button>
+                <button id="btn-add-game" class="btn btn-primary">+ Add Game</button>
+                <button id="btn-settings" class="btn btn-ghost" title="Settings">⚙</button>
+            </div>
+        </header>
+
+        <div id="library-empty" class="empty-state hidden">
+            <p>No games found in this folder.</p>
+            <p class="empty-sub">Add your first game to create a folder with an <code>info.cfg</code> and its assets.</p>
+        </div>
+
+        <div id="library-grid" class="grid"></div>
+
+        <div id="skipped-note" class="skipped-note hidden"></div>
+    </section>
+
+    <!-- ================= Edit modal ================= -->
+    <div id="modal-edit" class="modal-backdrop hidden">
+        <div class="modal">
+            <header class="modal-header">
+                <h3>Edit Game</h3>
+                <button class="btn-close" data-close="modal-edit">✕</button>
+            </header>
+            <div class="modal-body">
+                <div class="edit-layout">
+                    <div class="edit-fields">
+                        <label class="field">
+                            <span>Name</span>
+                            <input type="text" id="edit-name" />
+                        </label>
+                        <label class="field">
+                            <span>System</span>
+                            <select id="edit-system"></select>
+                        </label>
+                        <div class="field">
+                            <span>Game file</span>
+                            <div id="edit-file" class="file-readout"></div>
+                        </div>
+                        <button id="edit-show-folder" class="btn btn-ghost btn-sm">Show folder in Finder</button>
+                    </div>
+                    <div class="edit-assets">
+                        <div class="asset-slot" data-asset="cover">
+                            <span class="asset-label">Cover</span>
+                            <div class="asset-preview asset-cover" id="edit-preview-cover"></div>
+                            <button class="btn btn-ghost btn-sm" data-pick="cover">Change…</button>
+                            <button class="btn btn-ghost btn-sm btn-sgdb" data-sgdb="cover">SteamGridDB…</button>
+                        </div>
+                        <div class="asset-slot" data-asset="icon">
+                            <span class="asset-label">Icon</span>
+                            <div class="asset-preview asset-icon" id="edit-preview-icon"></div>
+                            <button class="btn btn-ghost btn-sm" data-pick="icon">Change…</button>
+                            <button class="btn btn-ghost btn-sm btn-sgdb" data-sgdb="icon">SteamGridDB…</button>
+                        </div>
+                        <div class="asset-slot" data-asset="bg">
+                            <span class="asset-label">Background</span>
+                            <div class="asset-preview asset-bg" id="edit-preview-bg"></div>
+                            <button class="btn btn-ghost btn-sm" data-pick="bg">Change…</button>
+                            <button class="btn btn-ghost btn-sm btn-sgdb" data-sgdb="bg">SteamGridDB…</button>
+                        </div>
+                    </div>
+                </div>
+                <p id="edit-error" class="error-text hidden"></p>
+            </div>
+            <footer class="modal-footer">
+                <button id="btn-delete-game" class="btn btn-danger">Delete…</button>
+                <span class="modal-footer-spacer"></span>
+                <button class="btn btn-ghost" data-close="modal-edit">Cancel</button>
+                <button id="btn-save-edit" class="btn btn-primary">Save Changes</button>
+            </footer>
+        </div>
+    </div>
+
+    <!-- ================= Add-game wizard ================= -->
+    <div id="modal-wizard" class="modal-backdrop hidden">
+        <div class="modal modal-wide">
+            <header class="modal-header">
+                <h3 id="wizard-title">Add Game</h3>
+                <button class="btn-close" data-close="modal-wizard">✕</button>
+            </header>
+
+            <div class="wizard-steps" id="wizard-steps">
+                <span class="step" data-step="1">1. System</span>
+                <span class="step" data-step="2">2. Game File</span>
+                <span class="step" data-step="3">3. Artwork</span>
+                <span class="step" data-step="4">4. Review</span>
+            </div>
+
+            <div class="modal-body">
+                <!-- Step 1: system -->
+                <div class="wizard-page" data-page="1">
+                    <p class="wizard-lead">What system is this game for?</p>
+                    <div id="system-grid" class="system-grid"></div>
+                </div>
+
+                <!-- Step 2: rom -->
+                <div class="wizard-page hidden" data-page="2">
+                    <p class="wizard-lead" id="rom-lead">Select the rom, iso or script file.</p>
+                    <div class="rom-picker">
+                        <button id="btn-pick-rom" class="btn btn-primary">Choose File…</button>
+                        <div id="rom-readout" class="file-readout hidden"></div>
+                    </div>
+                    <label class="field field-narrow">
+                        <span>Game name</span>
+                        <input type="text" id="wizard-name" placeholder="Shown under the tile in the launcher" />
+                    </label>
+                    <label class="field field-narrow hidden" id="wizard-root-field">
+                        <span>Create in</span>
+                        <select id="wizard-root"></select>
+                    </label>
+                </div>
+
+                <!-- Step 3: artwork -->
+                <div class="wizard-page hidden" data-page="3">
+                    <p class="wizard-lead">Pick the artwork. Everything here is optional — you can add it later.</p>
+                    <div class="edit-assets">
+                        <div class="asset-slot">
+                            <span class="asset-label">Cover <em>(tile art, 2:3)</em></span>
+                            <div class="asset-preview asset-cover" id="wiz-preview-cover"></div>
+                            <button class="btn btn-ghost btn-sm" data-wizpick="cover">Choose…</button>
+                            <button class="btn btn-ghost btn-sm btn-sgdb" data-wizsgdb="cover">SteamGridDB…</button>
+                        </div>
+                        <div class="asset-slot">
+                            <span class="asset-label">Icon <em>(small square)</em></span>
+                            <div class="asset-preview asset-icon" id="wiz-preview-icon"></div>
+                            <button class="btn btn-ghost btn-sm" data-wizpick="icon">Choose…</button>
+                            <button class="btn btn-ghost btn-sm btn-sgdb" data-wizsgdb="icon">SteamGridDB…</button>
+                        </div>
+                        <div class="asset-slot">
+                            <span class="asset-label">Background <em>(fullscreen)</em></span>
+                            <div class="asset-preview asset-bg" id="wiz-preview-bg"></div>
+                            <button class="btn btn-ghost btn-sm" data-wizpick="bg">Choose…</button>
+                            <button class="btn btn-ghost btn-sm btn-sgdb" data-wizsgdb="bg">SteamGridDB…</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 4: review -->
+                <div class="wizard-page hidden" data-page="4">
+                    <p class="wizard-lead">Ready to create this game folder:</p>
+                    <div id="review-box" class="review-box"></div>
+                </div>
+
+                <p id="wizard-error" class="error-text hidden"></p>
+            </div>
+
+            <footer class="modal-footer">
+                <button id="wizard-back" class="btn btn-ghost">Back</button>
+                <button id="wizard-next" class="btn btn-primary">Next</button>
+            </footer>
+        </div>
+    </div>
+
+    <!-- ================= SteamGridDB picker ================= -->
+    <div id="modal-sgdb" class="modal-backdrop hidden">
+        <div class="modal modal-wide">
+            <header class="modal-header">
+                <h3 id="sgdb-title">SteamGridDB</h3>
+                <button class="btn-close" data-close="modal-sgdb">✕</button>
+            </header>
+            <div class="modal-body">
+                <div class="sgdb-controls">
+                    <input type="text" id="sgdb-search" spellcheck="false"
+                           placeholder="Game title" />
+                    <button id="sgdb-search-btn" class="btn btn-ghost">Search</button>
+                    <select id="sgdb-game" class="toolbar-select hidden"></select>
+                </div>
+                <div id="sgdb-status" class="sgdb-status hidden"></div>
+                <div id="sgdb-grid" class="sgdb-grid"></div>
+                <p id="sgdb-error" class="error-text hidden"></p>
+            </div>
+            <footer class="modal-footer">
+                <button class="btn btn-ghost" data-close="modal-sgdb">Cancel</button>
+            </footer>
+        </div>
+    </div>
+
+    <!-- ================= Settings modal ================= -->
+    <div id="modal-settings" class="modal-backdrop hidden">
+        <div class="modal">
+            <header class="modal-header">
+                <h3>Settings</h3>
+                <button class="btn-close" id="btn-settings-close">✕</button>
+            </header>
+            <div class="modal-body">
+                <div class="field">
+                    <span>GAME folders</span>
+                    <div id="settings-roots" class="settings-roots"></div>
+                    <button id="settings-add-root" class="btn btn-ghost btn-sm">Add GAME Folder…</button>
+                </div>
+
+                <div class="field">
+                    <span>Backup folder</span>
+                    <div class="settings-row">
+                        <div id="settings-backup-dir" class="file-readout"></div>
+                        <button id="settings-pick-backup" class="btn btn-ghost btn-sm">Change…</button>
+                    </div>
+                    <p class="field-hint">Backups are written to a
+                        <code>Vitro Game Backups</code> folder inside it.</p>
+                </div>
+
+                <label class="field">
+                    <span>SteamGridDB API key</span>
+                    <input type="text" id="settings-sgdb-key" spellcheck="false"
+                           placeholder="Paste your API key" />
+                    <p class="field-hint">For artwork lookups. Get a free key at
+                        steamgriddb.com → Preferences → API.</p>
+                </label>
+            </div>
+            <footer class="modal-footer">
+                <button id="btn-settings-done" class="btn btn-primary">Done</button>
+            </footer>
+        </div>
+    </div>
+
+    <!-- ================= Stats modal ================= -->
+    <div id="modal-stats" class="modal-backdrop hidden">
+        <div class="modal modal-wide">
+            <header class="modal-header">
+                <h3>Play Stats</h3>
+                <button class="btn-close" data-close="modal-stats">✕</button>
+            </header>
+            <div class="modal-body">
+                <p id="stats-summary" class="stats-summary"></p>
+                <table class="stats-table">
+                    <thead>
+                        <tr>
+                            <th>Game</th>
+                            <th>System</th>
+                            <th class="num">Playtime</th>
+                            <th class="num">Plays</th>
+                            <th>Last played</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stats-rows"></tbody>
+                </table>
+            </div>
+            <footer class="modal-footer">
+                <button class="btn btn-ghost" data-close="modal-stats">Close</button>
+            </footer>
+        </div>
+    </div>
+
+    <div id="toast" class="toast hidden"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>
