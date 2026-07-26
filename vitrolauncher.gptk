@@ -1,0 +1,30 @@
+# Vitro Launcher gptokeyb input configuration
+# Maps physical gamepad buttons to keyboard keys for Love2D.
+#
+# Values must be real keyboard key names from gptokeyb2's table
+# (letters, arrows, "home", "end", "pageup", ...). main.lua listens for
+# these names, e.g. START arrives as love.keypressed("home").
+
+dpup = up
+dpdown = down
+dpleft = left
+dpright = right
+
+a = a
+b = b
+x = x
+y = y
+
+l1 = pageup
+r1 = pagedown
+l2 = insert
+r2 = delete
+
+start = home
+select = end
+
+# Prevent analog ghost inputs
+leftanalogh = left_analog_left|left_analog_right
+leftanalogv = left_analog_up|left_analog_down
+rightanalogh = right_analog_left|right_analog_right
+rightanalogv = right_analog_up|right_analog_down
