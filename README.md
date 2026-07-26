@@ -6,9 +6,13 @@
 > for everything learned making this one.
 
 A Love2D home-screen style game launcher for [muOS](https://muos.dev) handhelds.
-Three screens on an animated background (PSP-style waves, PS5-style
-drifting dust particles, pixel-art clouds, or Switch-style Simple
+Three screens on an animated background (PSP-style waves,
+drifting dust particles, pixel-art clouds, or Simple
 gray), switched with L1/R1 via the glass navigation pill at the bottom:
+
+<img width="640" height="493" alt="screenshot-vitrolauncher1" src="https://github.com/user-attachments/assets/9bacfaeb-7203-4024-818e-0fa0c8dc5e96" />
+<img width="640" height="493" alt="screenshot-vitrolauncher2" src="https://github.com/user-attachments/assets/f3223b0e-c23d-44db-8269-2954505cfb79" />
+<img width="640" height="493" alt="screenshot-vitrolauncher3" src="https://github.com/user-attachments/assets/8ca49b4d-c350-4eeb-863f-6eab02853953" />
 
 - **Last Played** — horizontally scrolling carousel of cover-art tiles
   (2:3 box art by default, 1:1 square optional); the focused tile grows,
