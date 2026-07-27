@@ -1,3 +1,5 @@
+<img src="https://github.com/KevDoy/VitroLauncher-muOS/blob/main/VitroManager/build/icons/macos/app.png?raw=true" height="80" alt>
+
 # Vitro Launcher
 
 > Building your own muOS app? See [docs/BUILDING-MUOS-APPS.md](docs/BUILDING-MUOS-APPS.md),
